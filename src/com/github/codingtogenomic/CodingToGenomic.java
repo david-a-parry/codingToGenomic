@@ -377,7 +377,7 @@ public class CodingToGenomic {
       if (msg != null){
           System.out.println("\nERROR: " + msg);
       }
-      formatter.printHelp("java -jar CodingToGenomic.jar "
+      formatter.printHelp("CodingToGenomic "
               + "[-g <gene>] [-c <coordinate>] [options]\n", o, false);
       System.exit(exitVal);
   }

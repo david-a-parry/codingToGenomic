@@ -119,26 +119,11 @@ public class CodingToGenomic {
         codingToGenomicTranscript(species, transcript, c);
     }
     
-    
-    /*ENSEMBL EXAMPLE
-    
-    JSONArray variants = getVariants(species, gene);
-    for(Object variantObject: variants) {
-      JSONObject variant = (JSONObject)variantObject;
-      String srName = (String)variant.get("seq_region_name");
-      Number start = (Number)variant.get("start");
-      Number end = (Number)variant.get("end");
-      Number strand = (Number)variant.get("strand");
-      String id = (String)variant.get("id");
-      String consequence = (String)variant.get("id");
-      String output = String.format("%s:%d-%d:%d ==> %s (%s)", srName, start, end, strand, id, consequence);
-      System.out.println(output);
-    }
-            */
+
   }
   
   public static List<String> getGeneAndSymbolFromTranscript(String id)throws ParseException, MalformedURLException, IOException, InterruptedException {
-      String endpoint = "/overlap/id/ENST00000398208?feature=gene";
+      String endpoint = "/overlap/id/" + id + "?feature=gene";
       JSONArray genes = (JSONArray) getJSON(endpoint);
       JSONObject gene = (JSONObject)genes.get(0);
       String ensid = (String) gene.get("id");
@@ -180,7 +165,11 @@ public class CodingToGenomic {
                 + " (" + id + ")");
         return;
     }
-//    System.out.println(id + " => " + String.join(",", tr));
+    StringBuilder transcriptList = new StringBuilder(tr.get(0));
+    for (int i = 1; i < tr.size(); i++){
+        transcriptList.append(",").append(tr.get(i));
+    }
+    System.out.println(symbol + " => " + id + " => " + transcriptList.toString());
     for (String t : tr){
         String seq = getCds(t);
         if (seq != null){

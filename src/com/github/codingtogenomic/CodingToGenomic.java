@@ -119,7 +119,6 @@ public class CodingToGenomic {
         codingToGenomicTranscript(species, transcript, c);
     }
     
-
   }
   
   public static List<String> getGeneAndSymbolFromTranscript(String id)throws ParseException, MalformedURLException, IOException, InterruptedException {
@@ -140,7 +139,7 @@ public class CodingToGenomic {
     }
     List<String> geneAndSymbol = getGeneAndSymbolFromTranscript(id);  
       
-    String seq = getCds(id);
+    String seq = getTranscriptSequence(id, "cds");
     if (seq != null){
         if (seq.length() >= c ){
             String gCoord = cdsToGenomicCoordinate(id, c);
@@ -171,7 +170,7 @@ public class CodingToGenomic {
     }
     System.out.println(symbol + " => " + id + " => " + transcriptList.toString());
     for (String t : tr){
-        String seq = getCds(t);
+        String seq = getTranscriptSequence(t, "cds");
         if (seq != null){
             if (seq.length() >= c ){
                 String gCoord = cdsToGenomicCoordinate(t, c);
@@ -189,8 +188,9 @@ public class CodingToGenomic {
     }
   }
   
-  public static String getCds(String id) throws ParseException, MalformedURLException, IOException, InterruptedException {
-      String endpoint = "/sequence/id/" + id + "?type=cds";
+  
+  public static String getTranscriptSequence(String id, String type) throws ParseException, MalformedURLException, IOException, InterruptedException {
+      String endpoint = "/sequence/id/" + id + "?type=" + type;
       JSONObject sequence = (JSONObject) getJSON(endpoint);
       if (sequence.containsKey("seq")){
           return (String) sequence.get("seq");

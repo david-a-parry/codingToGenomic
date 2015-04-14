@@ -109,12 +109,21 @@ public class CodingToGenomic {
     try{
         c = Integer.parseInt(coordinate);
     }catch (NumberFormatException ex){
-        showHelp(options, "--coordinate argument '" + coordinate + "' is not an integer", 2);
+        showHelp(options, "--coordinate argument '" + coordinate + "' could not "
+                + "be parsed as an integer", 2);
     }
 
     //got arguments
     if (! gene.isEmpty()){
-        codingToGenomic(species, gene, c);
+        if (gene.matches("ENS\\w*G\\d{11}.*\\d*")){
+            System.out.println("Interpretting " + gene + " as an Ensembl Gene ID.");
+            if (line.hasOption("species")){
+                System.out.println("Ignoring --species option when searching Gene ID.");
+            }
+            codingToGenomicId(gene, c);
+        }else{
+            codingToGenomicSymbol(species, gene, c);
+        }
     }else{
         codingToGenomicTranscript(species, transcript, c);
     }
@@ -156,8 +165,17 @@ public class CodingToGenomic {
     }
   }
   
-  public static void codingToGenomic(String species, String symbol, int c) throws ParseException, MalformedURLException, IOException, InterruptedException {
-    String id = getGeneID(species, symbol);
+  public static void codingToGenomicId(String id, int c)throws ParseException, MalformedURLException, IOException, InterruptedException {
+      String symbol = getGeneSymbol(id);
+      codingToGenomic(id, symbol, c);
+  }
+  
+  public static void codingToGenomicSymbol(String species, String symbol, int c) throws ParseException, MalformedURLException, IOException, InterruptedException {
+      String id = getGeneID(species, symbol);
+      codingToGenomic(id, symbol, c);
+  }
+  
+  public static void codingToGenomic(String id, String symbol, int c) throws ParseException, MalformedURLException, IOException, InterruptedException {
     ArrayList<String> tr = getTranscriptIds(id);
     if (tr.isEmpty()){
         System.out.println("No protein coding transcripts found for " + symbol
@@ -168,7 +186,7 @@ public class CodingToGenomic {
     for (int i = 1; i < tr.size(); i++){
         transcriptList.append(",").append(tr.get(i));
     }
-    System.out.println(symbol + " => " + id + " => " + transcriptList.toString());
+    //System.out.println(symbol + " => " + id + " => " + transcriptList.toString());
     for (String t : tr){
         String seq = getTranscriptSequence(t, "cds");
         if (seq != null){
@@ -255,6 +273,15 @@ public class CodingToGenomic {
     }
     JSONObject gene = (JSONObject)genes.get(0);
     return (String)gene.get("id");
+  }
+  
+  public static String getGeneSymbol(String id) throws ParseException, MalformedURLException, IOException, InterruptedException {
+    String endpoint = "/lookup/id/"+id;
+    JSONObject gene = (JSONObject) getJSON(endpoint);
+    if(gene.isEmpty()) {
+      throw new RuntimeException("Got nothing for endpoint "+endpoint);
+    }
+    return (String)gene.get("display_name");
   }
 
   public static Object getJSON(String endpoint) throws ParseException, MalformedURLException, IOException, InterruptedException {
@@ -368,6 +395,7 @@ public class CodingToGenomic {
       }
       formatter.printHelp("CodingToGenomic "
               + "[-g <gene>] [-c <coordinate>] [options]\n", o, false);
+      System.out.println("");
       System.exit(exitVal);
   }
   

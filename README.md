@@ -1,4 +1,4 @@
-# codingToGenomic
+# CodingToGenomic
 
 CodingToGenomic is a simple program for the conversion of a CDS position to a genomic coordinate using Ensembl identifiers. It is powered by [Ensembl's Rest API](http://rest.ensembl.org/).
 

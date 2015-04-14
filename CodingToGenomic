@@ -1,4 +1,7 @@
-#!/usr/bin/env bash
+#!/usr/bin/env perl
+use strict;
+use warnings;
+use FindBin qw($RealBin);
 
-java -jar dist/CodingToGenomic.jar $@
-
+my $args = join(" ", @ARGV); 
+system("java -jar $RealBin/dist/CodingToGenomic.jar $args");

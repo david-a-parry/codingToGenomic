@@ -131,13 +131,31 @@ public class CodingToGenomic {
   }
   
   public static List<String> getGeneAndSymbolFromTranscript(String id)throws ParseException, MalformedURLException, IOException, InterruptedException {
-      String endpoint = "/overlap/id/" + id + "?feature=gene";
-      JSONArray genes = (JSONArray) getJSON(endpoint);
-      JSONObject gene = (JSONObject)genes.get(0);
-      String ensid = (String) gene.get("id");
-      String name = (String) gene.get("external_name");
-      return Arrays.asList(ensid, name);
-  }
+        String endpoint = "/lookup/id/" + id ;
+        JSONObject gene = (JSONObject) getJSON(endpoint);
+        String symbol = new String();
+        if (gene.containsKey("display_name")){
+            String display_name = (String) gene.get("display_name");
+            symbol = display_name.split("-")[0];
+        }
+        endpoint = "/overlap/id/" + id + "?feature=gene";
+        JSONArray genes = (JSONArray) getJSON(endpoint);
+        if (genes.isEmpty()){
+            throw new RuntimeException(String.format("Could not get gene details "
+                  + "for transcript %s.\nRetrieval from URL %s%s returned nothing.", 
+                  id, SERVER, endpoint));
+        }
+        for (Object o: genes){
+            JSONObject g = (JSONObject) o;
+            String name = (String) g.get("external_name");
+            if (name.equalsIgnoreCase(symbol)){
+                String ensid = (String) g.get("id");
+                return (Arrays.asList(ensid, symbol));
+            }
+        }
+        //failed to get ensgene id 
+        return (Arrays.asList("", symbol));
+    }
   
   public static void codingToGenomicTranscript(String species, String id, int c) throws ParseException, MalformedURLException, IOException, InterruptedException {
       String endpoint = "/lookup/id/"+id+"?expand=1";

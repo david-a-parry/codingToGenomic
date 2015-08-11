@@ -3,5 +3,4 @@ use strict;
 use warnings;
 use FindBin qw($RealBin);
 
-my $args = join(" ", @ARGV); 
-system("java -jar $RealBin/dist/CodingToGenomic.jar $args");
+system("java -jar $RealBin/dist/CodingToGenomic.jar @ARGV");

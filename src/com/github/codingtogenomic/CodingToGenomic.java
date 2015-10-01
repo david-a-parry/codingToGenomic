@@ -128,18 +128,20 @@ public class CodingToGenomic {
             }else if (idParser.isEnsp()){
                 result = codingToGenomicEnsp(gene, c);
             }else{
-                String tempResult = codingToGenomicId(gene, c);
-                result = convertGeneResult(tempResult, gene, c);
+                result = codingToGenomicId(gene, c);
             }
         }else{
             if (idParser.isTranscript()){
                 //append user input to beginning
                 result = codingToGenomicXrefTranscript(species, gene, c);
-                result = gene + ":c." + c + "\t" + result;
             }else{
-                String tempResult = codingToGenomicXref(species, gene, c);
-                result = convertGeneResult(tempResult, gene, c);
+                result = codingToGenomicXref(species, gene, c);
             }
+        }
+        if (idParser.isTranscript() || idParser.isEnsp()){
+            result = gene + ":c." + c + "\t" + result;
+        }else{
+            result = convertGeneResult(result, gene, c);
         }
         
     }else{

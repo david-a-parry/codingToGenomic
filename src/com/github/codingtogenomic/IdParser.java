@@ -42,6 +42,10 @@ public class IdParser {
             isTranscript = true;
             isEnsemblId = false;
             identifierType = "Uniprot ID";
+        }else if (id.matches("\\d+")){
+            isTranscript = false;
+            isEnsemblId = false;
+            identifierType = "Entrez Gene ID";
         }else{
             isTranscript = false;
             isEnsemblId = false;

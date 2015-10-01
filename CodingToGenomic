@@ -3,4 +3,5 @@ use strict;
 use warnings;
 use FindBin qw($RealBin);
 
-system("java -jar $RealBin/dist/CodingToGenomic.jar @ARGV");
+my @args = map {"\"$_\""} @ARGV;#hack for species argument that may contain spaces
+system("java -jar $RealBin/dist/CodingToGenomic.jar @args");

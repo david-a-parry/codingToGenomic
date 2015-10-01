@@ -115,7 +115,7 @@ public class CodingToGenomic {
 
     //got arguments
     String result;
-    String header = "Input\tSymbol\tEnsemblGene\tEnsemblTranscript\tCoordinate";
+    String header = "Input\tSymbol\tEnsemblGene\tEnsemblTranscript\tGenomicCoordinate";
     if (! gene.isEmpty()){
         IdParser idParser = new IdParser(gene);
         System.out.println("Interpretting " + gene + " as of type " + idParser.getIdentifierType());
@@ -158,7 +158,7 @@ public class CodingToGenomic {
     String split[] = r.split("\n");
     StringBuilder converted = new StringBuilder();
     for (String s: split){
-        converted.append(input).append(":").append(c).append("\t").append(s).append("\n");
+        converted.append(input).append(":c.").append(c).append("\t").append(s).append("\n");
     }
     return converted.toString();
   }
@@ -194,24 +194,24 @@ public class CodingToGenomic {
     String endpoint = "/lookup/id/"+id+"?expand=1";
     JSONObject tr = (JSONObject) getJSON(endpoint);
     if (tr.isEmpty()){
-        return "No protein coding transcripts found for " + id;
+        return "-\t-\t-\t" + id + "\tNo transcripts found for " + id;
     }
     List<String> geneAndSymbol = getGeneAndSymbolFromTranscript(id);  
+    String stub = geneAndSymbol.get(1) +"\t" + geneAndSymbol.get(0) 
+                        + "\t" + id + "\t" ;
       
     String seq = getTranscriptSequence(id, "cds");
     if (seq != null){
         if (seq.length() >= c ){
             String gCoord = cdsToGenomicCoordinate(id, c);
             if (gCoord != null){
-                return geneAndSymbol.get(1) +"\t" + geneAndSymbol.get(0) 
-                        + "\t" + id + "\t" + gCoord;
+                return stub + gCoord + "\n";
             }
         }else{
-            return "CDS coordinate " + c + " is greater than "
-                    + "length of CDS (" + seq.length() + ") for " + tr;
+            return stub + "CDS coordinate (" + c + ") > CDS length (" + seq.length() + ")\n";
         }
     }
-    return "ERROR: No CDS sequence found for " + tr;
+    return stub + "No CDS sequence found\n";
   }
   
   public static String codingToGenomicId(String id, int c)throws ParseException, MalformedURLException, IOException, InterruptedException {
@@ -222,7 +222,11 @@ public class CodingToGenomic {
   public static String codingToGenomicEnsp(String id, int c)throws ParseException, MalformedURLException, IOException, InterruptedException {
       //get parent Transcript from ENSP ID and process as transcript...
       String transcript = getTranscriptFromEnsp(id);
-      return codingToGenomicTranscript(transcript, c); 
+      if (transcript == null){
+          return "-\t-\t-\t-Could not identify parent transcript\n";
+      }else{
+          return codingToGenomicTranscript(transcript, c); 
+      }
   }
   
   
@@ -246,8 +250,8 @@ public class CodingToGenomic {
   public static String codingToGenomicGene(String id, String symbol, int c) throws ParseException, MalformedURLException, IOException, InterruptedException {
     ArrayList<String> tr = getTranscriptIds(id);
     if (tr.isEmpty()){
-        return "No protein coding transcripts found for " + symbol
-                + " (" + id + ")";
+        return "-\t-\t-\t" + id + "\tNo transcripts found for " + symbol
+                + " (" + id + ")\n";
     }
     /*
     StringBuilder transcriptList = new StringBuilder(tr.get(0));
@@ -256,6 +260,7 @@ public class CodingToGenomic {
     }
     //System.out.println(symbol + " => " + id + " => " + transcriptList.toString());
     */
+    String stub = symbol + "\t" + id + "\t";
     StringBuilder results = new StringBuilder();
     for (String t : tr){
         String seq = getTranscriptSequence(t, "cds");
@@ -263,18 +268,16 @@ public class CodingToGenomic {
             if (seq.length() >= c ){
                 String gCoord = cdsToGenomicCoordinate(t, c);
                 if (gCoord != null){
-                    results.append(symbol).append("\t").append(id)
-                            .append("\t").append(t).append("\t").append(gCoord).append("\n");
+                    results.append(stub).append(t).append("\t").append(gCoord).append("\n");
                 }else{
-                    results.append("ERROR: Could not map CDS coordinate for ").append(t).append("\n");
+                    results.append(stub).append(t).append("\tCould not map CDS coordinate\n");
                 }
             }else{
-                results.append("CDS coordinate ").append(c)
-                        .append(" is greater than " + "length of CDS (")
-                        .append(seq.length()).append(") for ").append(t).append("\n");
+                results.append(stub).append(t).append("\tCDS coordinate (")
+                        .append(c).append(") > CDS  length (").append(seq.length()).append(")\n");
             }
         }else{
-            results.append("ERROR: No CDS sequence found for ").append(t).append("\n");
+            results.append(stub).append("-\tNo CDS sequence found\n");
         }
         
     }
@@ -290,7 +293,7 @@ public class CodingToGenomic {
     if (info.containsKey("Parent")){
         return (String) info.get("Parent");
     }else{
-        return "ERROR: No transcript identified for " + id;
+        return null;
     }
   }
   

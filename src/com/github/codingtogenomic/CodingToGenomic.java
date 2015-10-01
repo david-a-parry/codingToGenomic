@@ -114,20 +114,53 @@ public class CodingToGenomic {
     }
 
     //got arguments
+    String result;
+    String header = "Input\tSymbol\tEnsemblGene\tEnsemblTranscript\tCoordinate";
     if (! gene.isEmpty()){
-        if (gene.matches("ENS\\w*G\\d{11}.*\\d*")){
-            System.out.println("Interpretting " + gene + " as an Ensembl Gene ID.");
+        IdParser idParser = new IdParser(gene);
+        System.out.println("Interpretting " + gene + " as of type " + idParser.getIdentifierType());
+        if (idParser.isEnsemblId()){
             if (line.hasOption("species")){
-                System.out.println("Ignoring --species option when searching Gene ID.");
+                System.out.println("Ignoring --species option when searching Ensembl ID.");
             }
-            codingToGenomicId(gene, c);
+            if (idParser.isTranscript()){
+                result = codingToGenomicTranscript(gene, c);
+            }else if (idParser.isEnsp()){
+                result = codingToGenomicEnsp(gene, c);
+            }else{
+                String tempResult = codingToGenomicId(gene, c);
+                result = convertGeneResult(tempResult, gene, c);
+            }
         }else{
-            codingToGenomicSymbol(species, gene, c);
+            if (idParser.isTranscript()){
+                //append user input to beginning
+                result = codingToGenomicXrefTranscript(species, gene, c);
+                result = gene + ":c." + c + "\t" + result;
+            }else{
+                String tempResult = codingToGenomicXref(species, gene, c);
+                result = convertGeneResult(tempResult, gene, c);
+            }
         }
+        
     }else{
-        codingToGenomicTranscript(species, transcript, c);
+        System.out.println("Searching for " + transcript + " as Ensembl transcript ID") ; 
+        result = codingToGenomicTranscript(transcript, c);
+        //append user input to beginning
+        result = transcript + ":c." + c + "\t" + result;
     }
     
+    System.out.println(header);
+    System.out.println(result);
+    
+  }
+  
+  public static String convertGeneResult(String r, String input, int c){
+    String split[] = r.split("\n");
+    StringBuilder converted = new StringBuilder();
+    for (String s: split){
+        converted.append(input).append(":").append(c).append("\t").append(s).append("\n");
+    }
+    return converted.toString();
   }
   
   public static List<String> getGeneAndSymbolFromTranscript(String id)throws ParseException, MalformedURLException, IOException, InterruptedException {
@@ -157,12 +190,11 @@ public class CodingToGenomic {
         return (Arrays.asList("", symbol));
     }
   
-  public static void codingToGenomicTranscript(String species, String id, int c) throws ParseException, MalformedURLException, IOException, InterruptedException {
-      String endpoint = "/lookup/id/"+id+"?expand=1";
-      JSONObject tr = (JSONObject) getJSON(endpoint);
-      if (tr.isEmpty()){
-        System.out.println("No protein coding transcripts found for " + id);
-        return;
+  public static String codingToGenomicTranscript(String id, int c) throws ParseException, MalformedURLException, IOException, InterruptedException {
+    String endpoint = "/lookup/id/"+id+"?expand=1";
+    JSONObject tr = (JSONObject) getJSON(endpoint);
+    if (tr.isEmpty()){
+        return "No protein coding transcripts found for " + id;
     }
     List<String> geneAndSymbol = getGeneAndSymbolFromTranscript(id);  
       
@@ -171,56 +203,94 @@ public class CodingToGenomic {
         if (seq.length() >= c ){
             String gCoord = cdsToGenomicCoordinate(id, c);
             if (gCoord != null){
-                System.out.println(geneAndSymbol.get(1) +" " + geneAndSymbol.get(0) 
-                        + " " + id + " c." + c + " => " + gCoord);
+                return geneAndSymbol.get(1) +"\t" + geneAndSymbol.get(0) 
+                        + "\t" + id + "\t" + gCoord;
             }
         }else{
-            System.out.println("CDS coordinate " + c + " is greater than "
-                    + "length of CDS (" + seq.length() + ") for " + tr);
+            return "CDS coordinate " + c + " is greater than "
+                    + "length of CDS (" + seq.length() + ") for " + tr;
         }
-    }else{
-        System.out.println("ERROR: No CDS sequence found for " + tr);
     }
+    return "ERROR: No CDS sequence found for " + tr;
   }
   
-  public static void codingToGenomicId(String id, int c)throws ParseException, MalformedURLException, IOException, InterruptedException {
+  public static String codingToGenomicId(String id, int c)throws ParseException, MalformedURLException, IOException, InterruptedException {
       String symbol = getGeneSymbol(id);
-      codingToGenomic(id, symbol, c);
+      return codingToGenomicGene(id, symbol, c);
   }
   
-  public static void codingToGenomicSymbol(String species, String symbol, int c) throws ParseException, MalformedURLException, IOException, InterruptedException {
+  public static String codingToGenomicEnsp(String id, int c)throws ParseException, MalformedURLException, IOException, InterruptedException {
+      //get parent Transcript from ENSP ID and process as transcript...
+      String transcript = getTranscriptFromEnsp(id);
+      return codingToGenomicTranscript(transcript, c); 
+  }
+  
+  
+  public static String codingToGenomicXref(String species, String id, int c) throws ParseException, MalformedURLException, IOException, InterruptedException {
+      String ensid = getGeneID(species, id);
+      String symbol = getGeneSymbol(ensid);
+      return codingToGenomicGene(ensid, symbol, c);
+  }
+  
+  public static String codingToGenomicXrefTranscript(String species, String id, int c) throws ParseException, MalformedURLException, IOException, InterruptedException {
+      String ensid = getTranscriptXrefId(species, id);
+      String symbol = getGeneSymbol(ensid);
+      return codingToGenomicTranscript(ensid, c);
+  }
+  
+  public static String codingToGenomicSymbol(String species, String symbol, int c) throws ParseException, MalformedURLException, IOException, InterruptedException {
       String id = getGeneID(species, symbol);
-      codingToGenomic(id, symbol, c);
+      return codingToGenomicGene(id, symbol, c);
   }
   
-  public static void codingToGenomic(String id, String symbol, int c) throws ParseException, MalformedURLException, IOException, InterruptedException {
+  public static String codingToGenomicGene(String id, String symbol, int c) throws ParseException, MalformedURLException, IOException, InterruptedException {
     ArrayList<String> tr = getTranscriptIds(id);
     if (tr.isEmpty()){
-        System.out.println("No protein coding transcripts found for " + symbol
-                + " (" + id + ")");
-        return;
+        return "No protein coding transcripts found for " + symbol
+                + " (" + id + ")";
     }
+    /*
     StringBuilder transcriptList = new StringBuilder(tr.get(0));
     for (int i = 1; i < tr.size(); i++){
         transcriptList.append(",").append(tr.get(i));
     }
     //System.out.println(symbol + " => " + id + " => " + transcriptList.toString());
+    */
+    StringBuilder results = new StringBuilder();
     for (String t : tr){
         String seq = getTranscriptSequence(t, "cds");
         if (seq != null){
             if (seq.length() >= c ){
                 String gCoord = cdsToGenomicCoordinate(t, c);
                 if (gCoord != null){
-                    System.out.println(symbol + " " + id + " " + t + 
-                            " c." + c + " => " + gCoord);
+                    results.append(symbol).append("\t").append(id)
+                            .append("\t").append(t).append("\t").append(gCoord).append("\n");
+                }else{
+                    results.append("ERROR: Could not map CDS coordinate for ").append(t).append("\n");
                 }
             }else{
-                System.out.println("CDS coordinate " + c + " is greater than "
-                        + "length of CDS (" + seq.length() + ") for " + t);
+                results.append("CDS coordinate ").append(c)
+                        .append(" is greater than " + "length of CDS (")
+                        .append(seq.length()).append(") for ").append(t).append("\n");
             }
         }else{
-            System.out.println("ERROR: No CDS sequence found for " + t);
+            results.append("ERROR: No CDS sequence found for ").append(t).append("\n");
         }
+        
+    }
+    return results.toString();
+  }
+  
+  public static String getTranscriptFromEnsp(String id) throws ParseException, MalformedURLException, IOException, InterruptedException {
+    String endpoint = "/lookup/id/"+id;
+    JSONObject info = (JSONObject) getJSON(endpoint);
+    if(info.isEmpty()) {
+      throw new RuntimeException("Got nothing for endpoint "+endpoint);
+    }
+    if (info.containsKey("Parent")){
+        return (String) info.get("Parent");
+    }else{
+        return "ERROR: No transcript identified for " + id;
     }
   }
   
@@ -249,7 +319,7 @@ public class CodingToGenomic {
                   String assembly = (String) m.get("assembly_name");
                   String chr = (String) m.get("seq_region_name");
                   Long start = (Long) m.get("start");
-                  mapStrings.append(chr + ":" + start + " (" + assembly + ")\n");
+                  mapStrings.append(chr + ":" + start + " (" + assembly + ")");
               }
           }
           return mapStrings.toString();
@@ -257,6 +327,7 @@ public class CodingToGenomic {
       return null;
   }
   
+  //requires ensembl gene ID for id
   public static ArrayList<String> getTranscriptIds(String id) throws ParseException, MalformedURLException, IOException, InterruptedException {
     ArrayList<String> transcriptIds = new ArrayList<>();
     String endpoint = "/lookup/id/"+id+"?expand=1";
@@ -276,6 +347,17 @@ public class CodingToGenomic {
     }
     return transcriptIds;
   }
+  
+  public static String getTranscriptXrefId(String species, String xref) throws ParseException, MalformedURLException, IOException, InterruptedException {
+    String endpoint = "/xrefs/symbol/"+species+"/"+xref+"?object_type=transcript";
+    JSONArray trs = (JSONArray) getJSON(endpoint);
+    if(trs.isEmpty()) {
+      throw new RuntimeException("Got nothing for endpoint "+endpoint);
+    }
+    JSONObject tr = (JSONObject)trs.get(0);
+    return (String)tr.get("id");
+  }
+  
 
   
   public static JSONArray getVariants(String species, String symbol) throws ParseException, MalformedURLException, IOException, InterruptedException {

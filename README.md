@@ -35,6 +35,8 @@ To specify a different species other than human use the -s option:
 
     ./CodingToGenomic -g TTN  -c 100 -s mouse
 
+You may also use other identifiers (e.g. CCDS, UniProt, Entrez Gene IDs, RefSeq) with the -g/--gene option to map to the relevant ensembl gene. However, with this feature **all transcripts of the gene will be assessed**, not just the relevant Ensembl transcript, so this feature **SHOULD BE USED WITH CARE**.
+
 ## Credit
 
 CodingToGenomic was written by David A. Parry (d.a.parry@leeds.ac.uk). It uses [Ensembl's Rest API](http://rest.ensembl.org/)

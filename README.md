@@ -38,6 +38,10 @@ You may also use Ensembl Gene identifiers in place of gene symbols:
 
     ./CodingToGenomic -g ENSG00000155657  -c 100 
 
+Or other supported identifiers, such as RefSeq IDs:
+
+    ./CodingToGenomic -g NM_001256850.1 -c 100 
+
 To specify a different species other than human use the -s option:
 
     ./CodingToGenomic -g TTN  -c 100 -s mouse

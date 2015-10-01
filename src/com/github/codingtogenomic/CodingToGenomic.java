@@ -90,7 +90,7 @@ public class CodingToGenomic {
         errorMsg.append("--coordinate argument is required\n");
     }
     if (line.hasOption("species")){
-        species = line.getOptionValue("species");
+        species = line.getOptionValue("species").replaceAll("\\s+", "_");
     }
     if (line.hasOption("b37")){
         if (species.equalsIgnoreCase("human") || species.equalsIgnoreCase("homo sapiens")){

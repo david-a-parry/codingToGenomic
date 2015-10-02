@@ -461,7 +461,7 @@ public class CodingToGenomic {
                                 .withDescription(  "Gene symbol to search" )
                                 .create( "g" );
       Option transcript   = OptionBuilder.withLongOpt("transcript")
-                                .withArgName( "gene" )
+                                .withArgName( "Ensembl transcript" )
                                 .hasArg()
                                 .withDescription(  "Ensembl transcript ID to search" )
                                 .create( "t" );

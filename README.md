@@ -21,12 +21,22 @@ Decompress the downloaded tarball:
 
     tar -xjvf CodingToGenomic-0.2.tar.bz2
 
-Change directory and run the CodingToGenomic program to get usage information:
+Change directory:
+
 
     cd CodingToGenomic-0.2
+
+Run the CodingToGenomic program to get usage information:
+
     ./CodingToGenomic
 
-Use the -c/--coordinate option to specify a CDS coordinate to map. Use either the -g/--gene or -t/--transcript options to specify your gene or transcript of interest. The -g/--gene option will attempt to correctly interpret any of the supported ID types (Gene symbols, Ensembl Gene/Transcript/Protein IDs, RefSeq IDs, UniProt IDs, CCDS IDs, Entrez Gene IDs). The -t/--transcript option will always interpret your input as an Ensembl transcript ID, which may be useful for atypical Ensembl transcript IDs such as those for C. elegans.
+
+Alternatively, it should be possible to run the CodingToGenomic.jar file directly from any platform with Java 1.7 or higher installed like so: 
+
+    java -jar dist/CodingToGenomic.jar 
+
+Use the -c/--coordinate option to specify a CDS coordinate to map. Use either the -g/--gene or -t/--transcript options to specify your gene or transcript of interest. The -g/--gene option will attempt to correctly interpret any of the supported ID types (Gene symbols, Ensembl Gene/Transcript/Protein IDs, RefSeq IDs, UniProt IDs, CCDS IDs, Entrez Gene IDs). The -t/--transcript option will always interpret your input as an Ensembl transcript ID, which may be useful for atypical Ensembl transcript IDs, such as those for C. elegans.
+
 
 ## Examples
 
@@ -62,11 +72,11 @@ If the Ensembl transcript ID is not in the typical "ENS..." format ensure you us
 
     ./CodingToGenomic -c 100 -t F53H8.4
 
-You may also use other identifiers (CCDS, UniProt, Entrez Gene, RefSeq) with the -g/--gene option to map to the relevant ensembl gene. Other identifiers may also be usable as long as they are not in a format that could be interpretted as one of the supported identifiers and are supported by the Ensembl REST API, so feel free to test different identifiers with the -g/--gene option. 
+You may also use other identifiers (CCDS, UniProt, Entrez Gene, RefSeq) with the -g/--gene option to map to the relevant ensembl gene/transcript. Other identifiers may also be usable as long as they are not in a format that could be interpretted as one of the supported identifiers and are supported by the Ensembl REST API, so feel free to test different identifiers with the -g/--gene option. 
 
 ## Credit
 
-CodingToGenomic was written by David A. Parry (d.a.parry@leeds.ac.uk). It uses [Ensembl's REST API](http://rest.ensembl.org/)
+CodingToGenomic was written by David A. Parry. It uses [Ensembl's REST API](http://rest.ensembl.org/)
 
 ## License
 

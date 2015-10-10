@@ -34,7 +34,7 @@ public class IdParser {
             isTranscript = false;
             identifierType = "Ensembl Protein ID";
             isEnsp = true;
-        }else if (id.matches("N[MP]_\\d+(.\\d+)*")){
+        }else if (id.matches("[XN][MPR]_\\d+(.\\d+)*")){
             isTranscript = true;
             isEnsemblId = false;
             identifierType = "RefSeq ID";

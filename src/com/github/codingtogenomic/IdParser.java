@@ -17,7 +17,7 @@ public class IdParser {
     private final String identifierType; 
     IdParser(String s){
         id = s;
-        if (id.matches("ENS\\w*G\\d{11}(.\\d+)")){
+        if (id.matches("ENS\\w*G\\d{11}(.\\d+)*")){
             isTranscript = false;
             isEnsemblId = true;
             identifierType = "Ensembl Gene ID";
@@ -34,7 +34,7 @@ public class IdParser {
             isTranscript = false;
             identifierType = "Ensembl Protein ID";
             isEnsp = true;
-        }else if (id.matches("N[MP]_\\d+(.\\d+)*")){
+        }else if (id.matches("[XN][MPR]_\\d+(.\\d+)*")){
             isTranscript = true;
             isEnsemblId = false;
             identifierType = "RefSeq ID";

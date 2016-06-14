@@ -16,6 +16,7 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import net.minidev.json.JSONArray;
@@ -240,7 +241,7 @@ public class CodingToGenomic {
   
   public static String codingToGenomicXrefTranscript(String species, String id, int c) throws ParseException, MalformedURLException, IOException, InterruptedException {
       String ensid = getTranscriptXrefId(species, id);
-      String symbol = getGeneSymbol(ensid);
+      //String symbol = getGeneSymbol(ensid);
       return codingToGenomicTranscript(ensid, c);
   }
   
@@ -310,6 +311,11 @@ public class CodingToGenomic {
   }
   
   public static String cdsToGenomicCoordinate(String id, int coord) throws ParseException, MalformedURLException, IOException, InterruptedException {
+      
+      if (coord < 0){
+          return utrToGenomicCoordinate(id, coord);
+      }
+      
       String endpoint = "/map/cds/" + id +"/"+ coord + ".." + coord;
       JSONObject info = (JSONObject) getJSON(endpoint);
       StringBuilder mapStrings = new StringBuilder();
@@ -318,7 +324,12 @@ public class CodingToGenomic {
       }
       if (info.containsKey("mappings")){
           JSONArray mappings = (JSONArray) info.get("mappings");
+          int n = 0;
           for (Object map: mappings){
+              n++;
+              if (n > 1){
+                  mapStrings.append("|");
+              }
               JSONObject m = (JSONObject) map;
               if (m.containsKey("start") && m.containsKey("seq_region_name")){
                   String assembly = (String) m.get("assembly_name");
@@ -331,6 +342,174 @@ public class CodingToGenomic {
       }
       return null;
   }
+  
+  public static String utrToGenomicCoordinate(String id, int coord) throws ParseException, MalformedURLException, IOException, InterruptedException {
+      if (coord > 0){
+          throw new RuntimeException("utrToGenomicCoordinate method requires " +
+                  "coordinate to be less than zero");
+      }
+
+      String trEndpoint = "/lookup/id/"+id+"?expand=1";
+      JSONObject trInfo = (JSONObject) getJSON(trEndpoint);
+      if(trInfo.isEmpty()) {
+        throw new RuntimeException("Got nothing for endpoint "+trEndpoint);
+      }
+      TranscriptDetails trDetails = getTranscriptDetailsFromJson(trInfo);
+
+      String cdsEndpoint = "/map/cds/" + id +"/"+ 1 + ".." + 1;
+      JSONObject cdsInfo = (JSONObject) getJSON(cdsEndpoint);
+
+      if(cdsInfo.isEmpty()) {
+        throw new RuntimeException("Got nothing for endpoint "+cdsEndpoint);
+      }
+      
+      if (cdsInfo.containsKey("mappings")){
+          StringBuilder mapStrings = new StringBuilder();
+          JSONArray mappings = (JSONArray) cdsInfo.get("mappings");
+          int n = 0;
+          for (Object map: mappings){
+              n++;
+              if (n > 1){
+                  mapStrings.append("|");
+              }
+              JSONObject m = (JSONObject) map;
+              if (m.containsKey("start") && m.containsKey("seq_region_name")){
+                  //assembly = (String) m.get("assembly_name");
+                  String chr = (String) m.get("seq_region_name");
+                  Long genomicCoord = (Long) m.get("start");
+                  String trPos = trDetails.getCdnaPosition(chr, genomicCoord.intValue());
+                  try{
+                      int pos = Integer.parseInt(trPos);
+                      if (Math.abs(coord) > pos ){
+                          mapStrings.append("UTR position > length of 5' UTR");
+                          
+                      }else{
+                          String cdnaPos = cdnaToGenomicCoordinate(id, pos + coord);
+                          if(cdnaPos != null){
+                              mapStrings.append(cdnaPos);
+                          }
+                      }
+                  }catch(NumberFormatException | ParseException | IOException | InterruptedException ex){
+                      mapStrings.append( "Could not parse cDNA position "
+                              + "(" + trPos + ") for " + id);
+                  }
+              }
+          }
+          return mapStrings.toString();
+      }
+      return null;
+  }
+  
+  
+    public static String cdnaToGenomicCoordinate(String id, int coord) throws ParseException, MalformedURLException, IOException, InterruptedException {
+      
+      if (coord < 0){
+          return utrToGenomicCoordinate(id, coord);
+      }
+      
+      String endpoint = "/map/cdna/" + id +"/"+ coord + ".." + coord;
+      JSONObject info = (JSONObject) getJSON(endpoint);
+      StringBuilder mapStrings = new StringBuilder();
+      if(info.isEmpty()) {
+          throw new RuntimeException("Got nothing for endpoint "+endpoint);
+      }
+      if (info.containsKey("mappings")){
+          JSONArray mappings = (JSONArray) info.get("mappings");
+          int n = 0;
+          for (Object map: mappings){
+              n++;
+              if (n > 1){
+                  mapStrings.append("|");
+              }
+              JSONObject m = (JSONObject) map;
+              if (m.containsKey("start") && m.containsKey("seq_region_name")){
+                  String assembly = (String) m.get("assembly_name");
+                  String chr = (String) m.get("seq_region_name");
+                  Long start = (Long) m.get("start");
+                  mapStrings.append(chr + ":" + start + " (" + assembly + ")");
+              }
+          }
+          return mapStrings.toString();
+      }
+      return null;
+    }
+  
+    private static TranscriptDetails getTranscriptDetailsFromJson(JSONObject j)
+            throws ParseException, MalformedURLException, IOException, InterruptedException {
+        TranscriptDetails trans = new TranscriptDetails();        
+        trans.setTranscriptId((String) j.get("id"));
+        String biotype = (String)j.get("biotype");
+        trans.setBiotype(biotype);
+        if (j.containsKey("is_canonical")){
+            String isCanon = j.get("is_canonical").toString();
+            if (Integer.parseInt(isCanon) > 0){
+                trans.setIsCanonical(true);
+            }else{
+                trans.setIsCanonical(false);
+            }
+        }
+        if (j.containsKey("strand")){
+           if ((Long) j.get("strand") > 0){
+               trans.setStrand(1);
+           }else{
+               trans.setStrand(-1);
+           }
+       }
+       //get exons
+       if (j.containsKey("Exon")){
+           JSONArray exons = (JSONArray) j.get("Exon");
+           for (Object e: exons){
+               JSONObject jxon = (JSONObject) e;
+               TranscriptDetails.Exon exon = trans.new Exon();
+               Long start = (Long) jxon.get("start");
+               Long end = (Long) jxon.get("end");
+               exon.setStart(start.intValue());
+               exon.setEnd(end.intValue());
+               trans.getExons().add(exon);
+           }
+           //sort and number exons
+           Collections.sort(trans.getExons());
+           for (int i = 0; i < trans.getExons().size(); i++){
+               if (trans.getStrand() < 0){
+                   trans.getExons().get(i).setOrder(
+                           trans.getExons().size() - i);
+               }else{
+                   trans.getExons().get(i).setOrder(i+1);
+               }
+           }
+       }
+       
+       //get chromosome
+       if (j.containsKey("seq_region_name")){
+            trans.setChromosome((String) j.get("seq_region_name"));
+        }
+
+      //get transcription start and end
+       if (j.containsKey("start")){
+           Long start = (Long)j.get("start");
+           trans.setTxStart(start.intValue());
+       }
+       if (j.containsKey("end")){
+           Long end = (Long)j.get("end");
+           trans.setTxEnd(end.intValue());
+       }
+       
+       
+       //get translation start and end if coding                   
+       if (j.containsKey("Translation")){
+           JSONObject p = (JSONObject) j.get("Translation");
+           trans.setProteinId((String) p.get("id"));
+           Long start = (Long) p.get("start");
+           Long end = (Long) p.get("end");
+           trans.setCdsStart(start.intValue());
+           trans.setCdsEnd(end.intValue());
+           Long length = (Long) p.get("length");
+           trans.setProteinLength(length.intValue());
+       }else{
+           //if using a transcript id for some reason rest won't return translation
+       }
+       return trans;
+    }  
   
   //requires ensembl gene ID for id
   public static ArrayList<String> getTranscriptIds(String id) throws ParseException, MalformedURLException, IOException, InterruptedException {

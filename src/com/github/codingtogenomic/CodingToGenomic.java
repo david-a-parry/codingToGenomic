@@ -40,12 +40,12 @@ public class CodingToGenomic {
     /**
      * @param args the command line arguments
      */
-  public static String SERVER = "http://rest.ensembl.org";
-  public static final String GRCh37Server = "http://grch37.rest.ensembl.org/";
-  public static final JSONParser PARSER = new JSONParser(JSONParser.MODE_JSON_SIMPLE);
+  private static String SERVER = "http://rest.ensembl.org";
+  private static final String GRCh37Server = "http://grch37.rest.ensembl.org/";
+  private static final JSONParser PARSER = new JSONParser(JSONParser.MODE_JSON_SIMPLE);
 
-  public static int requestCount = 0;
-  public static long lastRequestTime = System.currentTimeMillis();
+  private static int requestCount = 0;
+  private static long lastRequestTime = System.currentTimeMillis();
 
   public static void main(String[] args) throws Exception {
       
@@ -108,8 +108,10 @@ public class CodingToGenomic {
     }
     int c = 0;
     boolean threePrimeUtr = false;
+    String prefix = "c.";
     if (coordinate.startsWith("*")){
         threePrimeUtr = true;
+        prefix = "c.*";
         String coord = coordinate.replaceFirst("\\*", "");
         try{
             c = Integer.parseInt(coord);
@@ -151,16 +153,17 @@ public class CodingToGenomic {
             }
         }
         if (idParser.isTranscript() || idParser.isEnsp()){
-            result = gene + ":c." + c + "\t" + result;
+            
+            result = gene + ":" + prefix + c + "\t" + result;
         }else{
-            result = convertGeneResult(result, gene, c);
+            result = convertGeneResult(result, gene, c, prefix);
         }
         
     }else{
         System.out.println("Searching for " + transcript + " as Ensembl transcript ID") ; 
         result = codingToGenomicTranscript(transcript, c, threePrimeUtr);
         //append user input to beginning
-        result = transcript + ":c." + c + "\t" + result;
+        result = transcript + ":" + prefix + c + "\t" + result;
     }
     
     System.out.println(header);
@@ -168,16 +171,17 @@ public class CodingToGenomic {
     
   }
   
-  public static String convertGeneResult(String r, String input, int c){
+  private static String convertGeneResult(final String r, final String input, 
+          final int c, final String prefix){
     String split[] = r.split("\n");
     StringBuilder converted = new StringBuilder();
     for (String s: split){
-        converted.append(input).append(":c.").append(c).append("\t").append(s).append("\n");
+        converted.append(input).append(":").append(prefix).append(c).append("\t").append(s).append("\n");
     }
     return converted.toString();
   }
   
-  public static List<String> getGeneAndSymbolFromTranscript(String id)throws ParseException, MalformedURLException, IOException, InterruptedException {
+  private static List<String> getGeneAndSymbolFromTranscript(final String id)throws ParseException, MalformedURLException, IOException, InterruptedException {
         String endpoint = "/lookup/id/" + id ;
         JSONObject gene = (JSONObject) getJSON(endpoint);
         String symbol = new String();
@@ -204,7 +208,9 @@ public class CodingToGenomic {
         return (Arrays.asList("", symbol));
     }
   
-  public static String codingToGenomicTranscript(String id, int c, boolean utr) throws ParseException, MalformedURLException, IOException, InterruptedException {
+  private static String codingToGenomicTranscript(final String id, final int c, 
+          final boolean utr) throws ParseException, MalformedURLException, 
+          IOException, InterruptedException {
     String endpoint = "/lookup/id/"+id+"?expand=1";
     JSONObject tr = (JSONObject) getJSON(endpoint);
     if (tr.isEmpty()){
@@ -228,14 +234,18 @@ public class CodingToGenomic {
     return stub + "No CDS sequence found\n";
   }
   
-  public static String codingToGenomicId(String id, int c, boolean utr)throws ParseException, MalformedURLException, IOException, InterruptedException {
-      String symbol = getGeneSymbol(id);
+  private static String codingToGenomicId(final String id, final int c, 
+          final boolean utr)throws ParseException, MalformedURLException, 
+          IOException, InterruptedException {
+      final String symbol = getGeneSymbol(id);
       return codingToGenomicGene(id, symbol, c, utr);
   }
   
-  public static String codingToGenomicEnsp(String id, int c, boolean utr)throws ParseException, MalformedURLException, IOException, InterruptedException {
+  private static String codingToGenomicEnsp(final String id, final int c, 
+          final boolean utr)throws ParseException, MalformedURLException, 
+          IOException, InterruptedException {
       //get parent Transcript from ENSP ID and process as transcript...
-      String transcript = getTranscriptFromEnsp(id);
+      final String transcript = getTranscriptFromEnsp(id);
       if (transcript == null){
           return "-\t-\t-\t-Could not identify parent transcript\n";
       }else{
@@ -244,25 +254,34 @@ public class CodingToGenomic {
   }
   
   
-  public static String codingToGenomicXref(String species, String id, int c, boolean utr) throws ParseException, MalformedURLException, IOException, InterruptedException {
-      String ensid = getGeneID(species, id);
-      String symbol = getGeneSymbol(ensid);
+  private static String codingToGenomicXref(final String species, final String id, 
+          final int c, final boolean utr) throws ParseException, 
+          MalformedURLException, IOException, InterruptedException {
+      final String ensid = getGeneID(species, id);
+      final String symbol = getGeneSymbol(ensid);
       return codingToGenomicGene(ensid, symbol, c, utr);
   }
   
-  public static String codingToGenomicXrefTranscript(String species, String id, int c, boolean utr) throws ParseException, MalformedURLException, IOException, InterruptedException {
-      String ensid = getTranscriptXrefId(species, id);
+  private static String codingToGenomicXrefTranscript(final String species, 
+          final String id, final int c, final boolean utr) throws ParseException, 
+          MalformedURLException, IOException, InterruptedException {
+      final String ensid = getTranscriptXrefId(species, id);
       //String symbol = getGeneSymbol(ensid);
       return codingToGenomicTranscript(ensid, c, utr);
   }
   
-  public static String codingToGenomicSymbol(String species, String symbol, int c, boolean utr) throws ParseException, MalformedURLException, IOException, InterruptedException {
-      String id = getGeneID(species, symbol);
+  private static String codingToGenomicSymbol(final String species, 
+          final String symbol, final int c, final boolean utr) 
+          throws ParseException, MalformedURLException, IOException, 
+          InterruptedException {
+      final String id = getGeneID(species, symbol);
       return codingToGenomicGene(id, symbol, c, utr);
   }
   
-  public static String codingToGenomicGene(String id, String symbol, int c, boolean utr) throws ParseException, MalformedURLException, IOException, InterruptedException {
-    ArrayList<String> tr = getTranscriptIds(id);
+  private static String codingToGenomicGene(final String id, final String symbol, 
+          final int c, final boolean utr) throws ParseException, 
+          MalformedURLException, IOException, InterruptedException {
+    final ArrayList<String> tr = getTranscriptIds(id);
     if (tr.isEmpty()){
         return "-\t-\t-\t" + id + "\tNo transcripts found for " + symbol
                 + " (" + id + ")\n";
@@ -274,10 +293,10 @@ public class CodingToGenomic {
     }
     //System.out.println(symbol + " => " + id + " => " + transcriptList.toString());
     */
-    String stub = symbol + "\t" + id + "\t";
+    final String stub = symbol + "\t" + id + "\t";
     StringBuilder results = new StringBuilder();
     for (String t : tr){
-        String seq = getTranscriptSequence(t, "cds");
+        final String seq = getTranscriptSequence(t, "cds");
         if (seq != null){
             if (seq.length() >= c ){
                 String gCoord = cdsToGenomicCoordinate(t, c, utr);
@@ -298,9 +317,10 @@ public class CodingToGenomic {
     return results.toString();
   }
   
-  public static String getTranscriptFromEnsp(String id) throws ParseException, MalformedURLException, IOException, InterruptedException {
-    String endpoint = "/lookup/id/"+id;
-    JSONObject info = (JSONObject) getJSON(endpoint);
+  private static String getTranscriptFromEnsp(final String id) throws 
+          ParseException, MalformedURLException, IOException, InterruptedException {
+    final String endpoint = "/lookup/id/"+id;
+    final JSONObject info = (JSONObject) getJSON(endpoint);
     if(info.isEmpty()) {
       throw new RuntimeException("Got nothing for endpoint "+endpoint);
     }
@@ -312,40 +332,42 @@ public class CodingToGenomic {
   }
   
   
-  public static String getTranscriptSequence(String id, String type) throws ParseException, MalformedURLException, IOException, InterruptedException {
-      String endpoint = "/sequence/id/" + id + "?type=" + type;
-      JSONObject sequence = (JSONObject) getJSON(endpoint);
+  private static String getTranscriptSequence(final String id, final String type) throws ParseException, MalformedURLException, IOException, InterruptedException {
+      final String endpoint = "/sequence/id/" + id + "?type=" + type;
+      final JSONObject sequence = (JSONObject) getJSON(endpoint);
       if (sequence.containsKey("seq")){
           return (String) sequence.get("seq");
       }
       return null;
   }
   
-  public static String cdsToGenomicCoordinate(String id, int coord, boolean utr) throws ParseException, MalformedURLException, IOException, InterruptedException {
+  private static String cdsToGenomicCoordinate(final String id, final int coord, 
+          final boolean utr) throws ParseException, MalformedURLException, 
+          IOException, InterruptedException {
       
       if (coord < 0 || utr){
           return utrToGenomicCoordinate(id, coord);
       }
       
-      String endpoint = "/map/cds/" + id +"/"+ coord + ".." + coord;
-      JSONObject info = (JSONObject) getJSON(endpoint);
+      final String endpoint = "/map/cds/" + id +"/"+ coord + ".." + coord;
+      final JSONObject info = (JSONObject) getJSON(endpoint);
       StringBuilder mapStrings = new StringBuilder();
       if(info.isEmpty()) {
           throw new RuntimeException("Got nothing for endpoint "+endpoint);
       }
       if (info.containsKey("mappings")){
-          JSONArray mappings = (JSONArray) info.get("mappings");
+          final JSONArray mappings = (JSONArray) info.get("mappings");
           int n = 0;
           for (Object map: mappings){
               n++;
               if (n > 1){
                   mapStrings.append("|");
               }
-              JSONObject m = (JSONObject) map;
+              final JSONObject m = (JSONObject) map;
               if (m.containsKey("start") && m.containsKey("seq_region_name")){
-                  String assembly = (String) m.get("assembly_name");
-                  String chr = (String) m.get("seq_region_name");
-                  Long start = (Long) m.get("start");
+                  final String assembly = (String) m.get("assembly_name");
+                  final String chr = (String) m.get("seq_region_name");
+                  final Long start = (Long) m.get("start");
                   mapStrings.append(chr).append(":").append(start).append(" (").append(assembly).append(")");
               }
           }
@@ -354,7 +376,8 @@ public class CodingToGenomic {
       return null;
   }
   
-  public static String utrToGenomicCoordinate(final String id, final int coord) throws ParseException, MalformedURLException, IOException, InterruptedException {
+  private static String utrToGenomicCoordinate(final String id, final int coord) 
+          throws ParseException, MalformedURLException, IOException, InterruptedException {
       if (coord > 0){
           return threePrimeUtrToGenomicCoordinate(id, coord);
       }else{
@@ -362,20 +385,18 @@ public class CodingToGenomic {
       }
   }
   
-  private static String threePrimeUtrToGenomicCoordinate(final String id, final int coord) throws ParseException, MalformedURLException, IOException, InterruptedException {
-      if (coord < 0){
-          throw new RuntimeException("threePrimeUtrToGenomicCoordinate method requires " +
-                  "coordinate to be greater than zero");
-      }
-      String trEndpoint = "/lookup/id/"+id+"?expand=1";
-      JSONObject trInfo = (JSONObject) getJSON(trEndpoint);
+  private static String threePrimeUtrToGenomicCoordinate(final String id, final 
+          int coord) throws ParseException, MalformedURLException, IOException, 
+          InterruptedException {
+      final String trEndpoint = "/lookup/id/"+id+"?expand=1";
+      final JSONObject trInfo = (JSONObject) getJSON(trEndpoint);
       if(trInfo.isEmpty()) {
         throw new RuntimeException("Got nothing for endpoint "+trEndpoint);
       }
-      TranscriptDetails trDetails = getTranscriptDetailsFromJson(trInfo);
-      int cdsLength = trDetails.getCodingLength();
-      String cdsEndpoint = "/map/cds/" + id +"/"+ cdsLength + ".." + cdsLength;
-      JSONObject cdsInfo = (JSONObject) getJSON(cdsEndpoint);
+      final TranscriptDetails trDetails = getTranscriptDetailsFromJson(trInfo);
+      final int cdsLength = trDetails.getCodingLength();
+      final String cdsEndpoint = "/map/cds/" + id +"/"+ cdsLength + ".." + cdsLength;
+      final JSONObject cdsInfo = (JSONObject) getJSON(cdsEndpoint);
 
       if(cdsInfo.isEmpty()) {
         throw new RuntimeException("Got nothing for endpoint "+cdsEndpoint);
@@ -383,7 +404,7 @@ public class CodingToGenomic {
       
       if (cdsInfo.containsKey("mappings")){
           StringBuilder mapStrings = new StringBuilder();
-          JSONArray mappings = (JSONArray) cdsInfo.get("mappings");
+          final JSONArray mappings = (JSONArray) cdsInfo.get("mappings");
           int n = 0;
           for (Object map: mappings){
               n++;
@@ -425,15 +446,15 @@ public class CodingToGenomic {
                   "coordinate to be less than zero");
       }
 
-      String trEndpoint = "/lookup/id/"+id+"?expand=1";
-      JSONObject trInfo = (JSONObject) getJSON(trEndpoint);
+      final String trEndpoint = "/lookup/id/"+id+"?expand=1";
+      final JSONObject trInfo = (JSONObject) getJSON(trEndpoint);
       if(trInfo.isEmpty()) {
         throw new RuntimeException("Got nothing for endpoint "+trEndpoint);
       }
-      TranscriptDetails trDetails = getTranscriptDetailsFromJson(trInfo);
+      final TranscriptDetails trDetails = getTranscriptDetailsFromJson(trInfo);
 
-      String cdsEndpoint = "/map/cds/" + id +"/"+ 1 + ".." + 1;
-      JSONObject cdsInfo = (JSONObject) getJSON(cdsEndpoint);
+      final String cdsEndpoint = "/map/cds/" + id +"/"+ 1 + ".." + 1;
+      final JSONObject cdsInfo = (JSONObject) getJSON(cdsEndpoint);
 
       if(cdsInfo.isEmpty()) {
         throw new RuntimeException("Got nothing for endpoint "+cdsEndpoint);
@@ -441,7 +462,7 @@ public class CodingToGenomic {
       
       if (cdsInfo.containsKey("mappings")){
           StringBuilder mapStrings = new StringBuilder();
-          JSONArray mappings = (JSONArray) cdsInfo.get("mappings");
+          final JSONArray mappings = (JSONArray) cdsInfo.get("mappings");
           int n = 0;
           for (Object map: mappings){
               n++;
@@ -476,20 +497,22 @@ public class CodingToGenomic {
   }
   
   
-    public static String cdnaToGenomicCoordinate(final String id, int coord) throws ParseException, MalformedURLException, IOException, InterruptedException {
+    private static String cdnaToGenomicCoordinate(final String id, 
+            final int coord) throws ParseException, MalformedURLException, 
+            IOException, InterruptedException {
       
       if (coord < 0){
           return utrToGenomicCoordinate(id, coord);
       }
       
-      String endpoint = "/map/cdna/" + id +"/"+ coord + ".." + coord;
-      JSONObject info = (JSONObject) getJSON(endpoint);
+      final String endpoint = "/map/cdna/" + id +"/"+ coord + ".." + coord;
+      final JSONObject info = (JSONObject) getJSON(endpoint);
       StringBuilder mapStrings = new StringBuilder();
       if(info.isEmpty()) {
           throw new RuntimeException("Got nothing for endpoint "+endpoint);
       }
       if (info.containsKey("mappings")){
-          JSONArray mappings = (JSONArray) info.get("mappings");
+          final JSONArray mappings = (JSONArray) info.get("mappings");
           int n = 0;
           for (Object map: mappings){
               n++;
@@ -501,7 +524,11 @@ public class CodingToGenomic {
                   String assembly = (String) m.get("assembly_name");
                   String chr = (String) m.get("seq_region_name");
                   Long start = (Long) m.get("start");
-                  mapStrings.append(chr + ":" + start + " (" + assembly + ")");
+                  if (start == coord){
+                      mapStrings.append("Not found");
+                  }else{
+                      mapStrings.append(chr + ":" + start + " (" + assembly + ")");                      
+                  }
               }
           }
           return mapStrings.toString();
@@ -509,11 +536,11 @@ public class CodingToGenomic {
       return null;
     }
   
-    private static TranscriptDetails getTranscriptDetailsFromJson(JSONObject j)
+    private static TranscriptDetails getTranscriptDetailsFromJson(final JSONObject j)
             throws ParseException, MalformedURLException, IOException, InterruptedException {
-        TranscriptDetails trans = new TranscriptDetails();        
+        final TranscriptDetails trans = new TranscriptDetails();        
         trans.setTranscriptId((String) j.get("id"));
-        String biotype = (String)j.get("biotype");
+        final String biotype = (String)j.get("biotype");
         trans.setBiotype(biotype);
         if (j.containsKey("is_canonical")){
             String isCanon = j.get("is_canonical").toString();
@@ -587,18 +614,19 @@ public class CodingToGenomic {
     }  
   
   //requires ensembl gene ID for id
-  public static ArrayList<String> getTranscriptIds(String id) throws ParseException, MalformedURLException, IOException, InterruptedException {
-    ArrayList<String> transcriptIds = new ArrayList<>();
-    String endpoint = "/lookup/id/"+id+"?expand=1";
-    JSONObject info = (JSONObject) getJSON(endpoint);
+  private static ArrayList<String> getTranscriptIds(final String id) 
+          throws ParseException, MalformedURLException, IOException, InterruptedException {
+    final ArrayList<String> transcriptIds = new ArrayList<>();
+    final String endpoint = "/lookup/id/"+id+"?expand=1";
+    final JSONObject info = (JSONObject) getJSON(endpoint);
     if(info.isEmpty()) {
       throw new RuntimeException("Got nothing for endpoint "+endpoint);
     }
     if (info.containsKey("Transcript")){
-        JSONArray trs = (JSONArray) info.get("Transcript");
+        final JSONArray trs = (JSONArray) info.get("Transcript");
         for (Object t: trs){
-           JSONObject j = (JSONObject) t;
-           String biotype = (String)j.get("biotype");
+           final JSONObject j = (JSONObject) t;
+           final String biotype = (String)j.get("biotype");
            if (biotype.equals("protein_coding")){
                transcriptIds.add((String) j.get("id"));
            }
@@ -607,52 +635,58 @@ public class CodingToGenomic {
     return transcriptIds;
   }
   
-  public static String getTranscriptXrefId(String species, String xref) throws ParseException, MalformedURLException, IOException, InterruptedException {
-    String endpoint = "/xrefs/symbol/"+species+"/"+xref+"?object_type=transcript";
-    JSONArray trs = (JSONArray) getJSON(endpoint);
+  private static String getTranscriptXrefId(final String species, final String xref) 
+          throws ParseException, MalformedURLException, IOException, InterruptedException {
+    final String endpoint = "/xrefs/symbol/"+species+"/"+xref+"?object_type=transcript";
+    final JSONArray trs = (JSONArray) getJSON(endpoint);
     if(trs.isEmpty()) {
       throw new RuntimeException("Got nothing for endpoint "+endpoint);
     }
-    JSONObject tr = (JSONObject)trs.get(0);
+    final JSONObject tr = (JSONObject)trs.get(0);
     return (String)tr.get("id");
   }
   
 
   
-  public static JSONArray getVariants(String species, String symbol) throws ParseException, MalformedURLException, IOException, InterruptedException {
-    String id = getGeneID(species, symbol);
+  private static JSONArray getVariants(final String species, final String symbol) 
+          throws ParseException, MalformedURLException, IOException, InterruptedException {
+    final String id = getGeneID(species, symbol);
     return (JSONArray) getJSON("/overlap/id/"+id+"?feature=variation");
   }
 
-  public static String getGeneID(String species, String symbol) throws ParseException, MalformedURLException, IOException, InterruptedException {
-    String endpoint = "/xrefs/symbol/"+species+"/"+symbol+"?object_type=gene";
-    JSONArray genes = (JSONArray) getJSON(endpoint);
-    if(genes.isEmpty()) {
+  private static String getGeneID(final String species, final String symbol) 
+          throws ParseException, MalformedURLException, IOException, InterruptedException {
+    final String endpoint = "/xrefs/symbol/"+species+"/"+symbol+"?object_type=gene";
+    final JSONArray genes = (JSONArray) getJSON(endpoint);
+    if (genes.isEmpty()) {
       throw new RuntimeException("Got nothing for endpoint "+endpoint);
     }
-    JSONObject gene = (JSONObject)genes.get(0);
+    final JSONObject gene = (JSONObject)genes.get(0);
     return (String)gene.get("id");
   }
   
-  public static String getGeneSymbol(String id) throws ParseException, MalformedURLException, IOException, InterruptedException {
-    String endpoint = "/lookup/id/"+id;
-    JSONObject gene = (JSONObject) getJSON(endpoint);
-    if(gene.isEmpty()) {
+  private static String getGeneSymbol(final String id) throws ParseException, 
+          MalformedURLException, IOException, InterruptedException {
+    final String endpoint = "/lookup/id/"+id;
+    final JSONObject gene = (JSONObject) getJSON(endpoint);
+    if (gene.isEmpty()) {
       throw new RuntimeException("Got nothing for endpoint "+endpoint);
     }
     return (String)gene.get("display_name");
   }
 
-  public static Object getJSON(String endpoint) throws ParseException, MalformedURLException, IOException, InterruptedException {
-    String jsonString = getContent(endpoint);
+  private static Object getJSON(final String endpoint) throws ParseException, 
+          MalformedURLException, IOException, InterruptedException {
+    final String jsonString = getContent(endpoint);
     return PARSER.parse(jsonString);
   }
 
-  public static String getContent(String endpoint) throws MalformedURLException, IOException, InterruptedException {
+  private static String getContent(final String endpoint) throws 
+          MalformedURLException, IOException, InterruptedException {
 
     if(requestCount == 15) { // check every 15
-      long currentTime = System.currentTimeMillis();
-      long diff = currentTime - lastRequestTime;
+      final long currentTime = System.currentTimeMillis();
+      final long diff = currentTime - lastRequestTime;
       //if less than a second then sleep for the remainder of the second
       if(diff < 1000) {
         Thread.sleep(1000 - diff);
@@ -662,12 +696,12 @@ public class CodingToGenomic {
       requestCount = 0;
     }
 
-    URL url = new URL(SERVER+endpoint);
+    final URL url = new URL(SERVER+endpoint);
     URLConnection connection = url.openConnection();
     HttpURLConnection httpConnection = (HttpURLConnection)connection;
     httpConnection.setRequestProperty("Content-Type", "application/json");
 
-    InputStream response = httpConnection.getInputStream();
+    final InputStream response = httpConnection.getInputStream();
     int responseCode = httpConnection.getResponseCode();
 
     if(responseCode != 200) {
@@ -763,6 +797,7 @@ public class CodingToGenomic {
         private static final List<String> OPT_ORDER = Arrays.asList(
                 "g", "t", "c", "s", "b", "h");
 
+        @Override
         public int compare(T o1, T o2) {
             return OPT_ORDER.indexOf(o1.getOpt()) - OPT_ORDER.indexOf(o2.getOpt());
         }

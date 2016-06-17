@@ -665,7 +665,7 @@ public class CodingToGenomic {
         for (Object t: trs){
            final JSONObject j = (JSONObject) t;
            final String biotype = (String)j.get("biotype");
-           if (biotype.equals("protein_coding") || getNonCoding){
+           if (j.containsKey("Translation") || getNonCoding){
                transcriptIds.add((String) j.get("id"));
            }
         }

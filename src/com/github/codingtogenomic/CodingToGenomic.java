@@ -781,7 +781,7 @@ public class CodingToGenomic {
   private static Options getOptions (String args[]) throws org.apache.commons.cli.ParseException{
       Option help = new Option( "h", "help", false, "print this message" );
       Option b37 = new Option( "b", "b37", false,  "use b37/hg19 coordinates (human only)" );
-      Option noncoding = new Option( "n", "noncoding", false,  "use transcript "
+      Option noncoding = new Option( "n", "noncoding", false,  "search transcript "
               + "cDNA coordinates, rather than CDS coordinates" );
       Option gene   = OptionBuilder.withLongOpt("gene")
                                 .withArgName( "gene" )

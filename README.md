@@ -19,12 +19,12 @@ Download the [latest release](https://github.com/gantzgraf/codingToGenomic/relea
 
 Decompress the downloaded tarball:
 
-    tar -xjvf CodingToGenomic-0.2.tar.bz2
+    tar -xjvf CodingToGenomic-0.3.tar.bz2
 
 Change directory:
 
 
-    cd CodingToGenomic-0.2
+    cd CodingToGenomic-0.3
 
 Run the CodingToGenomic program to get usage information:
 
@@ -73,6 +73,17 @@ If the Ensembl transcript ID is not in the typical "ENS..." format ensure you us
     ./CodingToGenomic -c 100 -t F53H8.4
 
 You may also use other identifiers (CCDS, UniProt, Entrez Gene, RefSeq) with the -g/--gene option to map to the relevant ensembl gene/transcript. Other identifiers may also be usable as long as they are not in a format that could be interpretted as one of the supported identifiers and are supported by the Ensembl REST API, so feel free to test different identifiers with the -g/--gene option. 
+
+As of version 0.3, you can retrieve 5' and 3' UTR coordinates by specifying negative CDS coordinates (for 5' UTR) or prefixing coordinates with '\*' (for 3' UTR). For example:
+
+    ./CodingToGenomic -g ENSG00000155657  -c -20 
+
+The above command retrieves the coordinate for the position 20 bp upstream of the transcript start codon. While...
+    
+    ./CodingToGenomic -g ENSG00000155657  -c *20 
+
+...the above command retrieves the coordinate for the position 20 bp downstream of the transcript stop codon.
+    
 
 ## Credit
 

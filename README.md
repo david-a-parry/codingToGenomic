@@ -83,7 +83,12 @@ The above command retrieves the coordinate for the position 20 bp upstream of th
     ./CodingToGenomic -g ENSG00000155657  -c *20 
 
 ...the above command retrieves the coordinate for the position 20 bp downstream of the transcript stop codon.
+
+Also added in version 0.3, cDNA coordinates can be searched instead of CDS coordinates by adding the -n/--noncoding switch:
     
+    ./CodingToGenomic -g ENSG00000155657  -c 100 -n 
+
+The above command gets coordinate 100 of the cDNA for each transcript of ENSG00000155657. 
 
 ## Credit
 
